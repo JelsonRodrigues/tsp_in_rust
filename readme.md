@@ -17,12 +17,12 @@ Testado em um R5 5600x
 
 ## Build and Run ##
 
-Para rodar, tenha o compilador rust instalado e faça:<br>
+Para rodar, tenha o compilador rust e o cargo instalado e faça:<br>
 1º clone o repositório -> `git clone https://github.com/JelsonRodrigues/tsp_in_rust.git`<br>
 2º entre na pasta do repositório -> `cd tsp_in_rust`<br>
 3º compile o programa -> `cargo build --release`<br>
 4º rode o programa <br>-> (*windows*) `./target/release/tsp_in_rust.exe .\src\data_set\tsp1_253.csv`<br>
-                   -> (*linux*)   `./target/release/tsp_in_rust.o .\src\data_set\tsp1_253.csv`<br>
+                   -> (*linux*)   `./target/release/tsp_in_rust .\src\data_set\tsp1_253.csv`<br>
 
 ## Observações ##
 
