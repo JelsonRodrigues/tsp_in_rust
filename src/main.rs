@@ -19,7 +19,7 @@ fn main() {
     let ((minimo, indice_minimo),(maximo, indice_maximo)) = tsp_forca_bruta(&grafo, 0, (calcula_fatorial(grafo.len() - 1) - 1).try_into().unwrap());
     let agora = std::time::Instant::now();
     
-    // Mostra o peso e o menor caminho
+    // Mostra o peso e o caminho
     println!("\tMenor caminho: {minimo}");
     imprime_ordem_lexicografica_n(indice_minimo, grafo.len());
     println!("\tMaior caminho: {maximo}");
@@ -34,26 +34,17 @@ fn main() {
 }
 
 fn imprime_grafo(grafo : &Vec<Vec<u32>>){
-    for (i, linha) in grafo.iter().enumerate() {
-        for (j, coluna) in linha.iter().enumerate() {
-            print!("({i}, {j}) : {coluna}\t");
-        }
-        println!();
+    for item in grafo {
+        println!("{:?}", item);
     }
 }
 
 fn imprime_ordem_lexicografica_n(n : u64, numero_elementos : usize){
-    let mut vetor:Vec<usize> = Vec::new();
-    for numero in 0..numero_elementos {
-        vetor.push(numero);
-    }
-
+    let mut vetor:Vec<usize> = (0..numero_elementos).collect();
+    
     n_esima_ordem_lexicografica(&mut vetor, n);
 
-    for item in vetor {
-        print!("{item} -> ");
-    }
-    println!();
+    println!("{:?}", vetor);
 }
 
 fn ler_arquivo(caminho : &str) -> Vec<Vec<u32>>{
@@ -119,10 +110,7 @@ fn tsp_forca_bruta(grafo : &Vec<Vec<u32>>, indice_primeira_permutacao :u64, indi
     
     // Cria o vetor com a permutação atual, contém o índice do vértice
     // na matriz
-    let mut caminho_atual: Vec<usize> = Vec::new();
-    for numero in (0 .. grafo.len()).into_iter() {
-        caminho_atual.push(numero);
-    }
+    let mut caminho_atual: Vec<usize> = (0..grafo.len()).collect();
 
     // Pega a n-ésima ordem lexicográfica
     n_esima_ordem_lexicografica(&mut caminho_atual, indice_primeira_permutacao);
@@ -130,17 +118,17 @@ fn tsp_forca_bruta(grafo : &Vec<Vec<u32>>, indice_primeira_permutacao :u64, indi
     // Calcular o peso e atualiza a mínima e máxima
     while permutacao_atual < indice_ultima_permutacao {
         peso_caminho_atual = 0;
-        for indice in 0 .. caminho_atual.len() {
+        for indice in 0..caminho_atual.len() {
             peso_caminho_atual += grafo[caminho_atual[indice]][caminho_atual[(indice + 1) % caminho_atual.len()]];
         }
 
-        if peso_caminho_atual < min{
+        if peso_caminho_atual < min {
             indice_min = permutacao_atual;
             min = peso_caminho_atual;
             println!("Menor PESO: {min}");
         }
         
-        if peso_caminho_atual > max{
+        if peso_caminho_atual > max {
             indice_max = permutacao_atual;
             max = peso_caminho_atual;
             println!("Maior PESO: {max}");
@@ -157,7 +145,7 @@ fn tsp_forca_bruta(grafo : &Vec<Vec<u32>>, indice_primeira_permutacao :u64, indi
 
 fn n_esima_ordem_lexicografica(vetor: &mut Vec<usize>, n: u64){
     // https://ichi.pro/pt/permutacoes-eficientes-em-ordem-lexicografica-156131986289848
-    
+
     if vetor.len() < 1 {return;}
 
     // Calcula fatorial de (numero de itens - 1)
