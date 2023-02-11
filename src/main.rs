@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::io::{BufReader, BufRead};
 use std::env;
 use std::process::exit;
+use std::thread::{available_parallelism, JoinHandle};
 
 fn main() {
     // Pega os arqumentos passados por linha de comando
@@ -12,11 +13,44 @@ fn main() {
     }
     
     // Tenta ler o arquivo
-    let grafo = ler_arquivo(argumentos[1].borrow());
+    let grafo = Box::new(ler_arquivo(argumentos[1].borrow()));
     
-    // Mede o tempo e calcula o menor e maior caminho
+    // Multithread stuff
+    let mut thread_handler: Vec<JoinHandle<((u32, u64), (u32, u64))>> = Vec::new();
+    let numero_threads = available_parallelism().unwrap().get();
+    println!("Utilizando {numero_threads} threads");
+    let numero_permutacoes_por_thread = calcula_fatorial(grafo.len() - 1) / numero_threads;
+    
+    // Mede o tempo
     let antes = std::time::Instant::now();
-    let ((minimo, indice_minimo),(maximo, indice_maximo)) = tsp_forca_bruta(&grafo, 0, (calcula_fatorial(grafo.len() - 1) - 1).try_into().unwrap());
+    
+    // Criacao das threads
+    for i in 0..numero_threads {
+        let indice_primeira_permutacao = i * numero_permutacoes_por_thread;
+        let indice_ultima_permutacao = (i + 1) * numero_permutacoes_por_thread;
+        let grafo = grafo.clone();
+        let thread = std::thread::spawn(move || {
+            tsp_forca_bruta(grafo, indice_primeira_permutacao as u64, indice_ultima_permutacao as u64)
+        });
+        thread_handler.push(thread);
+    }
+    // let ((minimo, indice_minimo),(maximo, indice_maximo)) = tsp_forca_bruta(&grafo, 0, (calcula_fatorial(grafo.len() - 1) - 1).try_into().unwrap());
+    
+    // Aguardando todas as threads terminarem 
+    let mut minimo = u32::MAX;
+    let mut indice_minimo = 0;
+    let mut maximo = u32::MIN;
+    let mut indice_maximo = 0;
+
+    for thread in thread_handler {
+        let a = thread.join().unwrap();
+        if a.0.0 < minimo {
+            (minimo, indice_minimo) = a.0;
+        }
+        if a.1.0 > maximo {
+            (maximo, indice_maximo) = a.1;
+        }
+    }
     let agora = std::time::Instant::now();
     
     // Mostra o peso e o caminho
@@ -99,7 +133,7 @@ fn proxima_ordem_lexicografica(vetor: &mut Vec<usize>) -> bool{
     return  false;
 }
 
-fn tsp_forca_bruta(grafo : &Vec<Vec<u32>>, indice_primeira_permutacao :u64, indice_ultima_permutacao : u64) -> ((u32, u64), (u32, u64)){
+fn tsp_forca_bruta(grafo : Box<Vec<Vec<u32>>>, indice_primeira_permutacao :u64, indice_ultima_permutacao : u64) -> ((u32, u64), (u32, u64)){
     let mut min: u32 = std::u32::MAX;
     let mut indice_min: u64 = 0;
     let mut max: u32 = std::u32::MIN;
