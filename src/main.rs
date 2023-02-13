@@ -1,28 +1,49 @@
+use clap::Parser;
 use std::borrow::Borrow;
 use std::io::{BufReader, BufRead};
-use std::env;
-use std::process::exit;
 use std::thread::{available_parallelism, JoinHandle};
+
+
+// Passagem de argumentos utilizando a crate clap
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Caminho do arquivo com matriz de adjacência no formato .csv separado por ';'
+    #[arg(short, long)]
+    caminho_arquivo_grafo: String,
+    
+    /// Número de threads para utilizar no programa (0 todas)
+    #[arg(short, long, default_value_t = 0)]
+    numero_threads: usize,
+}
 
 fn main() {
     // Pega os arqumentos passados por linha de comando
-    let argumentos: Vec<String> = env::args().collect();
-    if argumentos.len() < 2 {
-        println!("Passe o nome do arquivo com a matriz de adjacência como parâmetro");
-        exit(-1);
-    }
+    let args = Args::parse();
+
+    // Lê o grafo
+    let grafo = ler_arquivo(args.caminho_arquivo_grafo.borrow());
+    let grafo = Box::new(grafo);
     
-    // Tenta ler o arquivo
-    let grafo = Box::new(ler_arquivo(argumentos[1].borrow()));
+    let numero_threads =  {
+        let total_threads = available_parallelism().unwrap().get();
+        if  total_threads < args.numero_threads || args.numero_threads == 0 { total_threads }
+        else { args.numero_threads }
+    };
     
-    // Multithread stuff
-    let mut thread_handler: Vec<JoinHandle<((u32, u64), (u32, u64))>> = Vec::new();
-    let numero_threads = available_parallelism().unwrap().get();
-    println!("Utilizando {numero_threads} threads");
-    let numero_permutacoes_por_thread = calcula_fatorial(grafo.len() - 1) / numero_threads;
-    
+    // Variáveis com os resultados finais
+    let mut minimo = u32::MAX;
+    let mut indice_minimo = 0;
+    let mut maximo = u32::MIN;
+    let mut indice_maximo = 0;
+
     // Mede o tempo
     let antes = std::time::Instant::now();
+
+    // Multithread stuff
+    let mut thread_handler: Vec<JoinHandle<((u32, u64), (u32, u64))>> = Vec::new();
+    println!("Utilizando {numero_threads} threads");
+    let numero_permutacoes_por_thread = calcula_fatorial(grafo.len() - 1) / numero_threads;
     
     // Criacao das threads
     for i in 0..numero_threads {
@@ -34,14 +55,8 @@ fn main() {
         });
         thread_handler.push(thread);
     }
-    // let ((minimo, indice_minimo),(maximo, indice_maximo)) = tsp_forca_bruta(&grafo, 0, (calcula_fatorial(grafo.len() - 1) - 1).try_into().unwrap());
     
     // Aguardando todas as threads terminarem 
-    let mut minimo = u32::MAX;
-    let mut indice_minimo = 0;
-    let mut maximo = u32::MIN;
-    let mut indice_maximo = 0;
-
     for thread in thread_handler {
         let a = thread.join().unwrap();
         if a.0.0 < minimo {
@@ -65,6 +80,7 @@ fn main() {
     let tempo_decorrido_min = (agora - antes).as_secs() / 60 % 60;
     let tempo_decorrido_hora = (agora - antes).as_secs() / 60 / 60;
     println!("\tTempo {tempo_decorrido_hora}h:{tempo_decorrido_min}m:{tempo_decorrido_s}s:{tempo_decorrido_ms}ms");
+    println!("Numero de threads utilizadas: {numero_threads}")
 }
 
 fn imprime_grafo(grafo : &Vec<Vec<u32>>){
