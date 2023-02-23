@@ -2,7 +2,8 @@ use clap::Parser;
 use std::borrow::Borrow;
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc::{channel, Sender};
-use std::thread::{available_parallelism, JoinHandle};
+use std::sync::Arc;
+use std::thread::available_parallelism;
 
 // Passagem de argumentos utilizando a crate clap
 #[derive(Parser, Debug)]
@@ -23,7 +24,7 @@ fn main() {
 
     // Lê o grafo
     let grafo = ler_arquivo(args.caminho_arquivo_grafo.borrow());
-    let grafo = Box::new(grafo);
+    let grafo = Arc::new(grafo);
 
     let numero_threads = {
         let total_threads = available_parallelism().unwrap().get();
@@ -66,7 +67,7 @@ fn main() {
 
     drop(tx);
 
-    while let Ok(valor) = rx.recv() {
+    for valor in rx {
         if valor.0 < minimo {
             minimo = valor.0;
             indice_minimo = valor.1;
@@ -167,7 +168,7 @@ fn proxima_ordem_lexicografica(vetor: &mut Vec<usize>) -> bool {
 }
 
 fn tsp_forca_bruta(
-    grafo: Box<Vec<Vec<u32>>>,
+    grafo: Arc<Vec<Vec<u32>>>,
     indice_primeira_permutacao: u64,
     indice_ultima_permutacao: u64,
     transmitter: Sender<(u32, u64)>,
@@ -179,15 +180,14 @@ fn tsp_forca_bruta(
     let mut peso_caminho_atual: u32;
 
     let mut permutacao_atual = indice_primeira_permutacao;
-
-    // Cria o vetor com a permutação atual, contém o índice do vértice
-    // na matriz
+    let grafo = &*grafo;
+    // Cria o vetor com a permutação atual, contém o índice do vértice na matriz
     let mut caminho_atual: Vec<usize> = (0..grafo.len()).collect();
 
     // Pega a n-ésima ordem lexicográfica
     n_esima_ordem_lexicografica(&mut caminho_atual, indice_primeira_permutacao);
 
-    // Calcular o peso e atualiza a mínima e máxima
+    // Calcula o peso e atualiza a mínima e máxima
     while permutacao_atual < indice_ultima_permutacao {
         peso_caminho_atual = 0;
         (0..caminho_atual.len()).for_each(|indice| {
