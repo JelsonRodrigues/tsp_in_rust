@@ -173,9 +173,9 @@ fn tsp_forca_bruta(
     indice_ultima_permutacao: u64,
     transmitter: Sender<(u32, u64)>,
 ) -> ((u32, u64), (u32, u64)) {
-    let mut min: u32 = std::u32::MAX;
+    let mut min: u32 = u32::MAX;
     let mut indice_min: u64 = 0;
-    let mut max: u32 = std::u32::MIN;
+    let mut max: u32 = u32::MIN;
     let mut indice_max: u64 = 0;
     let mut peso_caminho_atual: u32;
 
